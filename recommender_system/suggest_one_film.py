@@ -58,6 +58,6 @@ def suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster):
 def suggest_one_film_random(R_user, ever_seen):
     # Case : we already explored all the clusters
     random_suggestion = random.randint(0, len(list(set(R_user))))
-    while random_suggestion in ever_seen
+    while random_suggestion in ever_seen:
         random_suggestion = random.randint(0, len(list(set(R_user))))
     return random_suggestion
