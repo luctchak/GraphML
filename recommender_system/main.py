@@ -3,6 +3,7 @@ import networkx as nx
 from ALS import ALS
 from suggest_one_film import suggest_one_film
 from build_films_graph import build_film_graph
+from build_films_graph import build_film_clusters
 from load_data import load_data
 import random
 
@@ -12,8 +13,9 @@ def main():
     data = load_data("../data/u.data")
     # data = filter(data, blablabla)
 
-    #TODO : dimension correctly this parameter (maybe dynamically)
+    #TODO : dimension correctly these parameter (maybe dynamically)
     d = 10
+    num_cluster = 10
 
     # Select a random user for test
     random_user_selected = random.randint(0, len(list(set(data[:, 0]))))
@@ -37,6 +39,10 @@ def main():
     # Generate a graph from this distance matrix (G is fixed until the end)
     G = nx.from_numpy_matrix(distances)
 
+    # Apply kmeans to get cluster assigment of films
+    cluster_assigment = build_film_clusters(V, num_cluster)
+
+
     # init values
     ever_seen = []
     R_user = np.zeros((num_films_to_recommend, 1))
@@ -44,6 +50,10 @@ def main():
 
     for i in range(0, num_films_to_recommend):
         recommendation = suggest_one_film(G, R_user, ever_seen)
+
+        # uncomment bellow to use recommendation with kmeans
+        # recommendation = suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster)
+
         ever_seen = [ever_seen, recommendation]
         #TODO : find reward and update R_user
         # reward = get the real reward of the user we are testing for this recommendation (stored in data)

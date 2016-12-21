@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import *
-from scipy.sparse import *
+from sklearn.cluster import KMeans
 
 
 # build the film_graph as a sparse matrix for a given input matrix
@@ -17,6 +17,9 @@ def build_film_graph(V):
     return distances
 
 
+
+
+
 def distance(v_i, v_j, distance_type, beta):
     if distance_type is "L2":
         dist = np.linalg.norm(v_i-v_j)
@@ -28,3 +31,8 @@ def distance(v_i, v_j, distance_type, beta):
             return beta-dist
 
     return 0
+
+
+# build a vector that assign each film to a cluster using kmeans
+def build_film_clusters(V, num_classes):
+    return KMeans(n_clusters=num_classes, random_state=0).fit(V)

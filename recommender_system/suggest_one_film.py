@@ -1,5 +1,5 @@
 import networkx as nx
-
+import numpy as np
 
 # Suggestion with the distance constraint
 
@@ -38,4 +38,18 @@ def check_validity_of_film(G, ever_seen, index, R):
 
     return False
 
-#TODO implement suggest_one_film_kmeans that precluster the films and propose most liked film in each clusters
+def suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster):
+    # Case : we already explored all the clusters
+    if len(ever_seen) > num_cluster:
+        indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
+        i = 0
+        while indexes[i] in ever_seen:
+            i += 1
+        return indexes[i]
+    else:
+        # We take the best predicted film from the cluster i
+        sub_R_user = np.copy(R_user)
+        for i in range(0, len(sub_R_user)):
+            if clusters_assigment[i] != len(ever_seen):
+                sub_R_user[i] = -1000  # should be enough
+        return np.argmax(sub_R_user)
