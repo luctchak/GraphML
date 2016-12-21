@@ -6,7 +6,7 @@ def suggest_one_film(G, R_user, ever_seen):
     Parameters
     ==========
     distances : float matrix
-        similarities between films
+        distances between films - 0 means infinity (used as adjacency matrix to build graph)
     R_user : float vector
         R_user[i] is the predicted rating value for film with id i
     everSeen : list of int
