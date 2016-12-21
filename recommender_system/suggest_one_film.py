@@ -38,6 +38,7 @@ def check_validity_of_film(G, ever_seen, index, R):
 
     return False
 
+
 def suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster):
     # Case : we already explored all the clusters
     if len(ever_seen) > num_cluster:

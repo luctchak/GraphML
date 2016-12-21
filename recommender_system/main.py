@@ -58,9 +58,7 @@ def main():
         ever_seen = [ever_seen, recommendation]
         #TODO : find reward (not sure my code works) and update R_user
         reward = data[data[1, :] == random_user_selected][data[2, :] == recommendation][3]
-
-        als.fitImplicit()
-        # R_user = use the formula that I forgot to take with me...
+        R_user = .. ?
 main()
 
 
