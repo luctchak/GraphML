@@ -20,9 +20,10 @@ def main():
     # Select a random user for test
     random_user_selected = random.randint(0, len(list(set(data[:, 0]))))
     # find the number of unique users
-    num_users = len(list(set(data[:, 0])))-1
+    num_users = len(list(set(data[:, 0])))
     # find the number of unique films
     num_items = len(list(set(data[:, 1])))
+
     # remove the user randomly selected from the DB
     user_col = data[:, 0][data[:, 0] != random_user_selected]
     item_col = data[:, 1][data[:, 0] != random_user_selected]
@@ -58,6 +59,7 @@ def main():
         #TODO : find reward (not sure my code works) and update R_user
         reward = data[data[1, :] == random_user_selected][data[2, :] == recommendation][3]
 
+        als.fitImplicit()
         # R_user = use the formula that I forgot to take with me...
 main()
 

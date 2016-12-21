@@ -184,7 +184,7 @@ class ALS(object):
         
         self.U = U0
         self.V = V0
-            
+
         if self.U is None:
             #self.U = self.init_factors(self.num_users,False)
             self.U = np.random.normal(size=(self.num_users,self.d))

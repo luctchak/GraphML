@@ -1,6 +1,6 @@
 import networkx as nx
 import numpy as np
-
+import random
 # Suggestion with the distance constraint
 
 def suggest_one_film(G, R_user, ever_seen):
@@ -53,3 +53,11 @@ def suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster):
             if clusters_assigment[i] != len(ever_seen):
                 sub_R_user[i] = -1000  # should be enough
         return np.argmax(sub_R_user)
+
+
+def suggest_one_film_random(R_user, ever_seen):
+    # Case : we already explored all the clusters
+    random_suggestion = random.randint(0, len(list(set(R_user))))
+    while random_suggestion in ever_seen
+        random_suggestion = random.randint(0, len(list(set(R_user))))
+    return random_suggestion
