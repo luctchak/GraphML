@@ -97,7 +97,7 @@ class ALS(object):
         
         self.U = U0
         self.V = V0
-            
+
         if self.U is None:
             #self.U = self.init_factors(self.num_users,False)
             self.U = np.random.normal(size=(self.num_users,self.d))
@@ -180,7 +180,6 @@ class ALS(object):
         self.alpha = alpha
         self.c = c
         self.eps = eps
-        
         self.train = sparse_matrix(train,n = self.num_users, p = self.num_items,names=self.names)
         
         self.U = U0
