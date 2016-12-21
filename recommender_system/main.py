@@ -1,20 +1,32 @@
 import numpy as np
-import Networkx as nx
+import networkx as nx
 from ALS import ALS
 from suggest_one_film import suggest_one_film
 from build_films_graph import build_film_graph
+from load_data import load_data
+import random
 
 num_films_to_recommend = 100
 
 def main():
-    data = np.loadtxt("../data/u.data", dtype=int)
+    data = load_data("../data/u.data")
+    # data = filter(data, blablabla)
+
+    #TODO : dimension correctly this parameter (maybe dynamically)
     d = 10
-    # find the number of unique user_id elements
-    num_users = len(list(set(data[:, 0])))
+
+    # Select a random user for test
+    random_user_selected = random.randint(0, len(list(set(data[:, 0]))))
+    # find the number of unique users
+    num_users = len(list(set(data[:, 0])))-1
+    # find the number of unique films
     num_items = len(list(set(data[:, 1])))
-    user_col = data[:, 0]
-    item_col = data[:, 1]
-    rating_col = data[:, 2]
+    # remove the user randomly selected from the DB
+    user_col = data[:, 0][data[:, 0] != random_user_selected]
+    item_col = data[:, 1][data[:, 0] != random_user_selected]
+    rating_col = data[:, 2][data[:, 0] != random_user_selected]
+
+    # initialisation of als
     als = ALS(d, num_users, num_items, user_col, item_col, rating_col)
 
     #TODO : See how to get R U and V from als
@@ -25,13 +37,17 @@ def main():
     # Generate a graph from this distance matrix (G is fixed until the end)
     G = nx.from_numpy_matrix(distances)
 
-
+    # init values
     ever_seen = []
-    R_user = R[index, :]
+    R_user = np.zeros((num_films_to_recommend, 1))
+    cumulated_reward = np.zeros((num_films_to_recommend, 1))
+
     for i in range(0, num_films_to_recommend):
         recommendation = suggest_one_film(G, R_user, ever_seen)
-
-
+        ever_seen = [ever_seen, recommendation]
+        #TODO : find reward and update R_user
+        # reward = get the real reward of the user we are testing for this recommendation (stored in data)
+        # R_user = use the formula that I forgot to take with me...
 main()
 
 

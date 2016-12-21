@@ -11,10 +11,12 @@ def load_data(file_path):
 
 
 # Filter database for tests
+
 #TODO : COMPLETE this function
-def filter(data, eventual_extra_parameters)
+
+def filter(data, eventual_extra_parameters):
 
 
 
 
-    return data_filtered
+    return 0

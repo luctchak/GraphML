@@ -1,5 +1,7 @@
-import Networkx as nx
+import networkx as nx
 
+
+# Suggestion with the distance constraint
 
 def suggest_one_film(G, R_user, ever_seen):
     """
@@ -36,6 +38,4 @@ def check_validity_of_film(G, ever_seen, index, R):
 
     return False
 
-
-
-
+#TODO implement suggest_one_film_kmeans that precluster the films and propose most liked film in each clusters
