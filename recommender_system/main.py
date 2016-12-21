@@ -55,8 +55,9 @@ def main():
         # recommendation = suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster)
 
         ever_seen = [ever_seen, recommendation]
-        #TODO : find reward and update R_user
-        # reward = get the real reward of the user we are testing for this recommendation (stored in data)
+        #TODO : find reward (not sure my code works) and update R_user
+        reward = data[data[1, :] == random_user_selected][data[2, :] == recommendation][3]
+
         # R_user = use the formula that I forgot to take with me...
 main()
 
