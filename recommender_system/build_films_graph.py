@@ -9,10 +9,10 @@ from scipy.sparse import *
 MAX_DISTANCE = sys.float_info.max
 
 def build_film_graph(V):
-    num_film = len(V[:, 1])
+    num_film = len(V[:, 0])
     distances = np.zeros((num_film, num_film), dtype=float)
-    for i in range(1, num_film):
-        for j in range(1, num_film):
+    for i in range(0, num_film):
+        for j in range(0, num_film):
             distances[i, j] = distance(V[i, :], V[j, :], "L2", 0.1)
 
     return distances
@@ -23,14 +23,9 @@ def distance(v_i, v_j, distance_type, beta):
         dist = np.linalg.norm(v_i-v_j)
         if dist < beta:
             return beta-dist
-        else:
-            return MAX_DISTANCE
-
-
     if distance_type is "inf":
         dist = np.max(abs(v_i-v_j))
         if dist < beta:
             return beta-dist
-        else:
-            return MAX_DISTANCE
+
     return 0
