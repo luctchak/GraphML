@@ -17,18 +17,15 @@ def build_film_graph(V):
     return distances
 
 
-
-
-
 def distance(v_i, v_j, distance_type, beta):
     if distance_type is "L2":
         dist = np.linalg.norm(v_i-v_j)
         if dist < beta:
-            return beta-dist
+            return dist
     if distance_type is "inf":
         dist = np.max(abs(v_i-v_j))
         if dist < beta:
-            return beta-dist
+            return dist
 
     return 0
 
