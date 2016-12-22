@@ -23,10 +23,9 @@ def filter(all_data):
 		rows_indices = np.where(all_data[:,1]==film_id)[0]
 		rows = all_data[rows_indices,:]
 		mean_rating = rows[:,2].mean()
-		print mean_rating
+		#print mean_rating
 		if mean_rating > 2 and mean_rating < 3: 
 			selected_lines = np.concatenate((selected_lines,rows), axis=0)
-	print 
 	return selected_lines[1:,:]
 
 
