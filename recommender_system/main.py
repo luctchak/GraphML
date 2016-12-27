@@ -2,13 +2,15 @@ import numpy as np
 import networkx as nx
 from ALS import ALS
 from suggest_one_film import suggest_one_film
+from pick_random_user import pick_random_user
 from build_films_graph import build_film_graph
 from build_films_graph import build_film_clusters
 from load_data import load_data
 from load_data import filter_data
 import random
 
-num_films_to_recommend = 100
+num_films_to_recommend = 10
+minimum_number_of_films_rated = 20
 
 def main():
     data = load_data("../data/u.data")
@@ -22,8 +24,7 @@ def main():
     # find the number of unique films
     num_items = len(list(set(data[:, 1])))
     # Select a random user for test
-    random_user_selected = pick_random_user(data)
-    random_user_selected = random.randint(0, num_users)
+    random_user_selected = pick_random_user(data, num_users, minimum_number_of_films_rated)
     # Extract the list of films id for which we know the random user's ratings
     candidate_set = data[:, 1][data[:, 0] == random_user_selected]
 
@@ -63,25 +64,20 @@ def main():
     for i in range(0, num_films_to_recommend):
         recommendation = suggest_one_film(G, R_user, ever_seen, candidate_set)
         if recommendation == -1:
-            print 'we explored all the possible solution'
+            print 'we explored all the possible solutions'
             break
         # uncomment bellow to use recommendation with kmeans
         # recommendation = suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster, candidate_set)
         print recommendation
-
         ever_seen = [ever_seen, recommendation]
-        #TODO : find reward (not sure my code works) and update R_user
         intermediate = data[data[:, 0] == random_user_selected]
-        print intermediate[intermediate[:, 1] == recommendation][:,2]
+        print intermediate[intermediate[:, 1] == recommendation][:, 2]
         reward = intermediate[intermediate[:, 1] == recommendation][:, 2]
         rewards = [rewards, reward]
 
         # R_user = . . .
 
         # add the value to train
-        # als.train['row'] = np.concatenate((als.train['row'], random_user_selected))
-        # als.train['col'] = np.concatenate((als.train['col'], recommendation))
-        # als.train['val'] = np.concatenate((als.train['val'], reward))
         als.train[random_user_selected, recommendation] = reward
         # get the indices
         indices = als.train[random_user_selected].nonzero()[1]
