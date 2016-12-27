@@ -14,6 +14,9 @@ def suggest_one_film(G, R_user, ever_seen):
     everSeen : list of int
         list of films already seen by the user
     """
+    if len(ever_seen) == 0:
+        return random.randint(0, len(R_user))
+
     is_not_acceptable = True
     R = 10
     # Sorting films by estimated preference
