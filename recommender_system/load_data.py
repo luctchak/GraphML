@@ -20,7 +20,7 @@ def filter_data(all_data):
         rows = all_data[rows_indices, :]
         mean_rating = rows[:, 2].mean()
         # print mean_rating
-        if 3 > mean_rating > 2:
+        if 2.5 > mean_rating > 2.2:
             selected_lines = np.concatenate((selected_lines, rows), axis=0)
     data_filtered = selected_lines[1:, :]
 

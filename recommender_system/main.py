@@ -22,7 +22,10 @@ def main():
     # find the number of unique films
     num_items = len(list(set(data[:, 1])))
     # Select a random user for test
+    random_user_selected = pick_random_user(data)
     random_user_selected = random.randint(0, num_users)
+    # Extract the list of films id for which we know the random user's ratings
+    candidate_set = data[:, 1][data[:, 0] == random_user_selected]
 
     # initialisation of als
     als = ALS(d, num_users, num_items, 'row','col','val')
@@ -58,26 +61,32 @@ def main():
     cumulated_reward = np.zeros((num_films_to_recommend, 1))
 
     for i in range(0, num_films_to_recommend):
-        recommendation = suggest_one_film(G, R_user, ever_seen)
+        recommendation = suggest_one_film(G, R_user, ever_seen, candidate_set)
+        if recommendation == -1:
+            print 'we explored all the possible solution'
+            break
         # uncomment bellow to use recommendation with kmeans
-        # recommendation = suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster)
+        # recommendation = suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster, candidate_set)
         print recommendation
 
         ever_seen = [ever_seen, recommendation]
         #TODO : find reward (not sure my code works) and update R_user
-        print data[data[:, 0] == random_user_selected]
-        print (data[data[:, 0] == random_user_selected])[data[:, 1] == recommendation+1]
-        rewards = [rewards, ((data[data[:, 0] == random_user_selected])[data[:, 1] == recommendation+1])[3]]
-        #R_user = ...
+        intermediate = data[data[:, 0] == random_user_selected]
+        print intermediate[intermediate[:, 1] == recommendation][:,2]
+        reward = intermediate[intermediate[:, 1] == recommendation][:, 2]
+        rewards = [rewards, reward]
 
+        # R_user = . . .
 
+        # add the value to train
+        # als.train['row'] = np.concatenate((als.train['row'], random_user_selected))
+        # als.train['col'] = np.concatenate((als.train['col'], recommendation))
+        # als.train['val'] = np.concatenate((als.train['val'], reward))
+        als.train[random_user_selected, recommendation] = reward
+        # get the indices
         indices = als.train[random_user_selected].nonzero()[1]
-        if indices.size:
-            R_u = als.train[random_user_selected,indices]
-            als.U[random_user_selected,:] = als.update(indices,als.V,R_u.toarray().T)
-        else:
-            als.U[random_user_selected,:] = np.zeros(als.d)
-
+        R_u = als.train[random_user_selected, indices]
+        als.U[random_user_selected, :] = als.update(indices, als.V, R_u.toarray().T)
 
     print ever_seen
     print rewards

@@ -3,7 +3,7 @@ import numpy as np
 import random
 # Suggestion with the distance constraint
 
-def suggest_one_film(G, R_user, ever_seen):
+def suggest_one_film(G, R_user, ever_seen, candidate_set):
     """
     Parameters
     ==========
@@ -13,21 +13,30 @@ def suggest_one_film(G, R_user, ever_seen):
         R_user[i] is the predicted rating value for film with id i
     everSeen : list of int
         list of films already seen by the user
+    candidate_set : list of int
+        list of ids for which we know the groundtruth (ideally huge)
     """
     if len(ever_seen) == 0:
-        return random.randint(0, len(R_user))
+        return random.choice(candidate_set)
 
     is_not_acceptable = True
     R = 10
+    print candidate_set
     # Sorting films by estimated preference
     indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
+    # Keep only the elements for which we know the ground truth
+    indexes = indexes[candidate_set]
     i = -1
     while is_not_acceptable:
         i += 1
+        if i >= len(indexes):
+            print 'We explored all the solution in ground truth'
+            return -1
         if i > len(R_user):
             i = 0
             R /= 2
         is_not_acceptable = check_validity_of_film(G, ever_seen, indexes[i], R)
+
 
     return indexes[i]
 
@@ -42,10 +51,12 @@ def check_validity_of_film(G, ever_seen, index, R):
     return False
 
 
-def suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster):
+def suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster, candidate_set):
     # Case : we already explored all the clusters
     if len(ever_seen) > num_cluster:
         indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
+        # Keep only the elements for which we know the ground truth
+        indexes = indexes[candidate_set]
         i = 0
         while indexes[i] in ever_seen:
             i += 1
