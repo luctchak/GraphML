@@ -12,7 +12,7 @@ def build_film_graph(V):
     distances = np.zeros((num_film, num_film), dtype=float)
     for i in range(0, num_film):
         for j in range(0, num_film):
-            distances[i, j] = distance(V[i, :], V[j, :], "L2", 0.1)
+            distances[i, j] = distance(V[i, :], V[j, :], "L2", 1)
 
     return distances
 

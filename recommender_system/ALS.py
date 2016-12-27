@@ -255,7 +255,6 @@ class ALS(object):
         return np.linalg.solve(M,Hix.T.dot(R)).reshape(self.d)
 
 
-
     def parallel_implicit_update(self,ind,HH,train,user=True):
         """
         Implicit update latent factors for a single user or item applied in parallel

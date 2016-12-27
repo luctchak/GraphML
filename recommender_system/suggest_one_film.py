@@ -21,31 +21,37 @@ def suggest_one_film(G, R_user, ever_seen, candidate_set):
 
     is_not_acceptable = True
     R = 10
-    print candidate_set
     # Sorting films by estimated preference
     indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
     # Keep only the elements for which we know the ground truth
-    indexes = indexes[candidate_set]
+    new_indexes = np.zeros(len(candidate_set), dtype=int)
+    cpt = 0
+    for i in range(0, len(indexes)):
+        if indexes[i] in candidate_set:
+            new_indexes[cpt] = indexes[i]
+            cpt += 1
     i = -1
     while is_not_acceptable:
         i += 1
-        if i >= len(indexes):
+        if i >= len(new_indexes):
             print 'We explored all the solution in ground truth'
             return -1
         if i > len(R_user):
             i = 0
             R /= 2
-        is_not_acceptable = check_validity_of_film(G, ever_seen, indexes[i], R)
-
-
-    return indexes[i]
+        is_not_acceptable = check_validity_of_film(G, ever_seen, new_indexes[i], R)
+    return new_indexes[i]
 
 # Returns False is the film chosen is too close to an existing one
 
 
 def check_validity_of_film(G, ever_seen, index, R):
-    for l in ever_seen:
-        if nx.shortest_path(G, source=index, target=ever_seen[l]) < R/(len(ever_seen)+1):
+    if index in ever_seen:
+        return True
+
+    for l in ever_seen[1:(len(ever_seen)-1)]:
+        if nx.shortest_path(G, source=index, target=l) < R/(len(ever_seen)+1):
+            print nx.shortest_path(G, source=index, target=l)
             return True
 
     return False
@@ -56,11 +62,19 @@ def suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster, 
     if len(ever_seen) > num_cluster:
         indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
         # Keep only the elements for which we know the ground truth
-        indexes = indexes[candidate_set]
+        new_indexes = np.zeros(len(candidate_set))
+        cpt = 0
+        for i in candidate_set:
+            new_indexes[cpt] = indexes[i]
+            cpt += 1
         i = 0
-        while indexes[i] in ever_seen:
+        while new_indexes[i] in ever_seen:
+            if i >= len(new_indexes):
+                print 'We explored all the solution in ground truth'
+                return -1
             i += 1
-        return indexes[i]
+
+        return new_indexes[i]
     else:
         # We take the best predicted film from the cluster i
         sub_R_user = np.copy(R_user)
