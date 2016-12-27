@@ -15,6 +15,7 @@ minimum_number_of_films_rated = 20
 def main():
     data = load_data("../data/u.data")
     data = filter_data(data)
+
     #TODO : dimension correctly these parameters (maybe dynamically)
     d = 10
     num_cluster = 10
