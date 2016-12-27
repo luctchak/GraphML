@@ -32,13 +32,14 @@ def main():
 
     # remove the user randomly selected from the DB
     train = {}
-    train['row'] = data[:, 0][data[:, 0] != random_user_selected]
-    train['col'] = data[:, 1][data[:, 0] != random_user_selected]
+    train['row'] = data[:, 0][data[:, 0] != random_user_selected] -1
+    train['col'] = data[:, 1][data[:, 0] != random_user_selected] -1
     train['val'] = data[:, 2][data[:, 0] != random_user_selected]
 
     # Get the first decomposition R = U*V
     als.fit(train)
 
+    print "ca a fit trop cool"
 
     # Compute distance matrix of films based on V
     distances = build_film_graph(als.V)
