@@ -7,7 +7,7 @@ from build_films_graph import build_film_clusters
 from load_data import load_data
 import random
 
-num_films_to_recommend = 100
+num_films_to_recommend = 0
 
 def main():
     data = load_data("../data/u.data")
@@ -24,24 +24,30 @@ def main():
     # find the number of unique films
     num_items = len(list(set(data[:, 1])))
 
-    # remove the user randomly selected from the DB
-    user_col = data[:, 0][data[:, 0] != random_user_selected]
-    item_col = data[:, 1][data[:, 0] != random_user_selected]
-    rating_col = data[:, 2][data[:, 0] != random_user_selected]
+
 
     # initialisation of als
-    als = ALS(d, num_users, num_items, user_col, item_col, rating_col)
+    als = ALS(d, num_users, num_items, 'row','col','val')
 
-    #TODO : See how to get R U and V from als
+
+    # remove the user randomly selected from the DB
+    train = {}
+    train['row'] = data[:, 0][data[:, 0] != random_user_selected]
+    train['col'] = data[:, 1][data[:, 0] != random_user_selected]
+    train['val'] = data[:, 2][data[:, 0] != random_user_selected]
+
+    # Get the first decomposition R = U*V
+    als.fit(train)
+
 
     # Compute distance matrix of films based on V
-    distances = build_film_graph(V)
+    distances = build_film_graph(als.V)
 
     # Generate a graph from this distance matrix (G is fixed until the end)
     G = nx.from_numpy_matrix(distances)
 
     # Apply kmeans to get cluster assigment of films
-    cluster_assigment = build_film_clusters(V, num_cluster)
+    cluster_assigment = build_film_clusters(als.V, num_cluster)
 
 
     # init values
@@ -58,7 +64,7 @@ def main():
         ever_seen = [ever_seen, recommendation]
         #TODO : find reward (not sure my code works) and update R_user
         reward = data[data[1, :] == random_user_selected][data[2, :] == recommendation][3]
-        R_user = ...
+        #R_user = ...
 main()
 
 

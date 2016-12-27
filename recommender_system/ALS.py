@@ -226,29 +226,21 @@ class ALS(object):
             if self.verbose:
                 print('end iteration',it+1)
         
-    def parallel_update(self,ind,train,user=True):
+
+    def implicit_update(self,indices,H,HH,R):
         """
-        Update latent factors for a single user or item applied in parallel
+        Implicit update latent factors for a single user or item.
         """
-        if user:
-            indices = train[ind].nonzero()[1]
-            Hix = self.V[indices,:]
-            R_u = train[ind,indices]
-            R = R_u.toarray().T
-        else:
-            indices = train[:,ind].nonzero()[0]
-            Hix = self.U[indices,:]
-            R_i = train[indices,ind]
-            R = R_i.toarray().T[0]
-        if len(indices)>0:
-            HH = Hix.T.dot(Hix)
-            if self.reg=="weighted":
-                M = HH + np.diag(self.lbda*len(R)*np.ones(self.d))
-            elif self.reg=="default":
-                M = HH + np.diag(self.lbda*np.ones(self.d))
-            return np.linalg.solve(M,Hix.T.dot(R)).reshape(self.d)
-        else:
-            return np.zeros(self.d)
+        # manque R entre Hix.T.dot(Hix)
+        Hix = csr_matrix(H[indices,:])
+        C = diags(self.transfo(R,intercept=False),shape=(len(R),len(R)))
+        if self.reg=="weighted":
+            M = HH + Hix.T.dot(C).dot(Hix) + np.diag(self.lbda*len(R)*np.ones(self.d))
+        elif self.reg=="default":
+            M = HH + Hix.T.dot(C).dot(Hix) + np.diag(self.lbda*np.ones(self.d))
+        C = diags(self.transfo(R),shape=(len(R),len(R)))
+        return np.linalg.solve(M,(C.dot(Hix)).sum(axis=0).T).reshape(self.d)
+
         
     def update(self,indices,H,R):
         """
@@ -261,7 +253,9 @@ class ALS(object):
         elif self.reg=="default":
             M = HH + np.diag(self.lbda*np.ones(self.d))
         return np.linalg.solve(M,Hix.T.dot(R)).reshape(self.d)
-    
+
+
+
     def parallel_implicit_update(self,ind,HH,train,user=True):
         """
         Implicit update latent factors for a single user or item applied in parallel
@@ -286,18 +280,30 @@ class ALS(object):
             return np.linalg.solve(M,(C.dot(Hix)).sum(axis=0).T).reshape(self.d)
         else:
             return np.zeros(self.d)
-    
-    def implicit_update(self,indices,H,HH,R):
+
+    def parallel_update(self,ind,train,user=True):
         """
-        Implicit update latent factors for a single user or item.
+        Update latent factors for a single user or item applied in parallel
         """
-        # manque R entre Hix.T.dot(Hix)
-        Hix = csr_matrix(H[indices,:])
-        C = diags(self.transfo(R,intercept=False),shape=(len(R),len(R)))
-        if self.reg=="weighted":
-            M = HH + Hix.T.dot(C).dot(Hix) + np.diag(self.lbda*len(R)*np.ones(self.d))
-        elif self.reg=="default":
-            M = HH + Hix.T.dot(C).dot(Hix) + np.diag(self.lbda*np.ones(self.d))
-        C = diags(self.transfo(R),shape=(len(R),len(R)))
-        return np.linalg.solve(M,(C.dot(Hix)).sum(axis=0).T).reshape(self.d)
-    
+        if user:
+            indices = train[ind].nonzero()[1]
+            Hix = self.V[indices,:]
+            R_u = train[ind,indices]
+            R = R_u.toarray().T
+        else:
+            indices = train[:,ind].nonzero()[0]
+            Hix = self.U[indices,:]
+            R_i = train[indices,ind]
+            R = R_i.toarray().T[0]
+        if len(indices)>0:
+            HH = Hix.T.dot(Hix)
+            if self.reg=="weighted":
+                M = HH + np.diag(self.lbda*len(R)*np.ones(self.d))
+            elif self.reg=="default":
+                M = HH + np.diag(self.lbda*np.ones(self.d))
+            return np.linalg.solve(M,Hix.T.dot(R)).reshape(self.d)
+        else:
+            return np.zeros(self.d)
+
+
+
