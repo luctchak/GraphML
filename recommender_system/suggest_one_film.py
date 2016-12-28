@@ -64,7 +64,7 @@ def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster,
         # Keep only the elements for which we know the ground truth
         new_indexes = np.zeros(len(candidate_set),dtype=int)
         cpt = 0
-        for i in range(0,len(indexes)):
+        for i in range(0, len(indexes)):
 		if indexes[i] in candidate_set:
             		new_indexes[cpt] = indexes[i]
             		cpt += 1
@@ -80,7 +80,7 @@ def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster,
         # We take the best predicted film from the cluster len(ever_seen)
         sub_R_user = np.copy(R_user)
         for i in range(0, len(sub_R_user)):
-            if clusters_assignment.predict(V[i,:]) != len(ever_seen):
+            if clusters_assignment.predict(V[i, :]) != len(ever_seen):
                    sub_R_user[i] = -1000  # should be enough
         argmaxs = np.argwhere(sub_R_user == np.amax(sub_R_user))
         items_pool = [i for i in argmaxs if i in candidate_set]
@@ -91,9 +91,26 @@ def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster,
         return items_pool[0]
 
 
-def suggest_one_film_random(R_user, ever_seen):
-    # Case : we already explored all the clusters
-    random_suggestion = random.randint(0, len(list(set(R_user))))
-    while random_suggestion in ever_seen:
-        random_suggestion = random.randint(0, len(list(set(R_user))))
-    return random_suggestion
+def suggest_one_film_random(R_user, ever_seen, candidate_set, it_max):
+    if it_max > len(ever_seen):
+        random_suggestion = candidate_set[random.randint(0, len(list(set(candidate_set))))]
+        while random_suggestion in ever_seen:
+            random_suggestion = random.randint(0, len(list(set(candidate_set))))
+        return random_suggestion
+    else:
+        indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
+        # Keep only the elements for which we know the ground truth
+        new_indexes = np.zeros(len(candidate_set), dtype=int)
+        cpt = 0
+        for i in range(0, len(indexes)):
+            if indexes[i] in candidate_set:
+                new_indexes[cpt] = indexes[i]
+                cpt += 1
+        i = 0
+        while new_indexes[i] in ever_seen:
+            if i >= len(new_indexes):
+                print 'We explored all the solution in ground truth'
+                return -1
+            i += 1
+
+        return new_indexes[i]
