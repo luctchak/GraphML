@@ -62,11 +62,12 @@ def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster,
     if len(ever_seen) > num_cluster:
         indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
         # Keep only the elements for which we know the ground truth
-        new_indexes = np.zeros(len(candidate_set))
+        new_indexes = np.zeros(len(candidate_set),dtype=int)
         cpt = 0
-        for i in candidate_set:
-            new_indexes[cpt] = indexes[i]
-            cpt += 1
+        for i in range(0,len(indexes)):
+		if indexes[i] in candidate_set:
+            		new_indexes[cpt] = indexes[i]
+            		cpt += 1
         i = 0
         while new_indexes[i] in ever_seen:
             if i >= len(new_indexes):

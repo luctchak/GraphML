@@ -2,7 +2,7 @@ import numpy as np
 import networkx as nx
 from ALS import ALS
 import pandas as pd
-from suggest_one_film import suggest_one_film
+from suggest_one_film import *
 from pick_random_user import pick_random_user
 from build_films_graph import build_film_graph
 from build_films_graph import build_film_clusters
@@ -12,6 +12,7 @@ from load_data import load_data
 from load_data import filter_data
 import random
 
+random.seed(11)
 num_films_to_recommend = 30
 minimum_number_of_films_rated = 50
 
@@ -56,7 +57,7 @@ print "Done."
 G = nx.from_numpy_matrix(distances)
 
 # Apply kmeans to get cluster assigment of films
-cluster_assigment = build_film_clusters(als.V, num_cluster)
+clusters_assignment = build_film_clusters(als.V, num_cluster)
 
 
 # init values
@@ -64,16 +65,17 @@ ever_seen = []
 rewards = []
 R_user = np.zeros(num_items)
 cumulated_reward = np.zeros((num_films_to_recommend, 1))
+intermediate = data[data[:, 0] == random_user_selected]
 
 for i in range(0, num_films_to_recommend):
-    recommendation = suggest_one_film(G, R_user, ever_seen, candidate_set)
-    if recommendation == -1:
-        print 'we explored all the possible solutions'
-        break
+#    recommendation = suggest_one_film(G, R_user, ever_seen, candidate_set)
+#    if recommendation == -1:
+#        print 'we explored all the possible solutions'
+#        break
     # uncomment bellow to use recommendation with kmeans
-    # recommendation = suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster, candidate_set)
+    recommendation = suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster, candidate_set, als.V)
+    recommendation = int(recommendation)
     ever_seen.append(recommendation)
-    intermediate = data[data[:, 0] == random_user_selected]
     reward = int(intermediate[intermediate[:, 1] == recommendation][:, 2])
     rewards.append(reward)
     # add the value to train
@@ -88,4 +90,5 @@ for i in range(0, num_films_to_recommend):
 print ever_seen
 print rewards
 
-
+### compute RMSE
+#RMSE = sqrt(sum(R_u.^2-rewards.^2))
