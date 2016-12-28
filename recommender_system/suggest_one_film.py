@@ -57,7 +57,7 @@ def check_validity_of_film(G, ever_seen, index, R):
     return False
 
 
-def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster, candidate_set,V):
+def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster, candidate_set, V):
     # Case : we already explored all the clusters
     if len(ever_seen) > num_cluster:
         indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
@@ -65,9 +65,9 @@ def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster,
         new_indexes = np.zeros(len(candidate_set),dtype=int)
         cpt = 0
         for i in range(0, len(indexes)):
-		if indexes[i] in candidate_set:
-            		new_indexes[cpt] = indexes[i]
-            		cpt += 1
+            if indexes[i] in candidate_set:
+                new_indexes[cpt] = indexes[i]
+                cpt += 1
         i = 0
         while new_indexes[i] in ever_seen:
             if i >= len(new_indexes):
@@ -80,22 +80,26 @@ def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster,
         # We take the best predicted film from the cluster len(ever_seen)
         sub_R_user = np.copy(R_user)
         for i in range(0, len(sub_R_user)):
-            if clusters_assignment.predict(V[i, :]) != len(ever_seen):
-                   sub_R_user[i] = -1000  # should be enough
+            #TODO : lever le warning engendre par cette ligne
+            if clusters_assignment.predict(V[i,:])!=len(ever_seen):
+            # if clusters_assignment.labels_[i] != len(ever_seen):
+                sub_R_user[i] = -1000  # should be enough
+
         argmaxs = np.argwhere(sub_R_user == np.amax(sub_R_user))
         items_pool = [i for i in argmaxs if i in candidate_set]
-        if len(items_pool)==0:
-                print "Kmeans suggestion: empty intersection, randomly suggesting"
-                items_pool = [i for i in candidate_set if i not in ever_seen]
-                return random.choice(items_pool)
+        if len(items_pool) == 0:
+            print "Kmeans suggestion: empty intersection, randomly suggesting"
+            items_pool = [i for i in candidate_set if i not in ever_seen]
+            return random.choice(items_pool)
+
         return items_pool[0]
 
 
 def suggest_one_film_random(R_user, ever_seen, candidate_set, it_max):
     if it_max > len(ever_seen):
-        random_suggestion = candidate_set[random.randint(0, len(list(set(candidate_set))))]
+        random_suggestion = candidate_set[random.randint(0, len(list(set(candidate_set)))-1)]
         while random_suggestion in ever_seen:
-            random_suggestion = random.randint(0, len(list(set(candidate_set))))
+            random_suggestion = candidate_set[random.randint(0, len(list(set(candidate_set)))-1)]
         return random_suggestion
     else:
         indexes = sorted(range(len(R_user)), key=R_user.__getitem__)

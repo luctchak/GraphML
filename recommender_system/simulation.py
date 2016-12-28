@@ -56,7 +56,6 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
     als = ALS(d, num_users, num_items, 'row', 'col', 'val', num_iters=10, verbose=True)
 
     for random_user_selected in random_users_selected:
-
         # Extract the list of films id for which we know the random user's ratings
         candidate_set = data[:, 1][data[:, 0] == random_user_selected]
 
@@ -71,7 +70,8 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
         als.fit(train)
         print "Done."
 
-
+        mem_train = als.train
+        mem_U = als.U
         # Compute distance matrix of films based on V
         print "Building_film_graph..."
         distances = build_film_graph(als.V)
@@ -82,10 +82,11 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
 
         # Apply kmeans to get cluster assigment of films
         clusters_assignment = build_film_clusters(als.V, num_cluster)
-
         intermediate = data[data[:, 0] == random_user_selected]
         for recommendation_method in range(0,3):
             for it in range(0, number_of_it_per_user):
+                als.train = mem_train
+                als.U = mem_U
                 # init values
                 ever_seen = []
                 R_user = np.zeros(num_items)
@@ -105,12 +106,12 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
                     if recommendation_method == 2:
                         recommendation = suggest_one_film_random(R_user, ever_seen, candidate_set, it_max)
 
-
                     if recommendation == -1:
-                            print 'we explored all the possible solutions'
-                            break
+                        print 'we explored all the possible solutions'
+                        break
+
                     recommendation = int(recommendation)
-                    reward = int(intermediate[intermediate[:, 1] == recommendation][:, 2])
+                    reward = intermediate[intermediate[:, 1] == recommendation][0, 2]
 
                     if recommendation_method == 0:
                         cumulated_reward_dist[i] += reward
@@ -147,9 +148,17 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
     RMSE_kmeans /= number_of_it_per_user*number_of_user_to_test
     RMSE_random /= number_of_it_per_user*number_of_user_to_test
 
-    plt.plot(range(0, 30), cumulated_reward_random, 'r')  # plotting t,a separately
-    plt.plot(range(0, 30), cumulated_reward_dist, 'b')    # plotting t,b separately
-    plt.plot(range(0, 30), cumulated_reward_kmeans, 'g')  # plotting t,c separately
+    #TODO : pourquoi ca affiche pas les labels
+
+    plt.plot(range(0, 30), cumulated_reward_random, 'r', label='random')  # plotting t,a separately
+    plt.plot(range(0, 30), cumulated_reward_dist, 'b', label='dist')    # plotting t,b separately
+    plt.plot(range(0, 30), cumulated_reward_kmeans, 'g', label='k-means')  # plotting t,c separately
+
+    plt.figure()
+    plt.plot(range(0, 30), RMSE_random, 'r', label='random')  # plotting t,a separately
+    plt.plot(range(0, 30), RMSE_dist, 'b', label='dist')    # plotting t,b separately
+    plt.plot(range(0, 30), RMSE_kmeans, 'g', label='k-means')  # plotting t,c separately
+
     plt.show()
 
     return 0
@@ -159,6 +168,5 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
 def RMSE(R_user, candidate_set, intermediate):
     sum = 0
     for i in candidate_set:
-        sum += (R_user[i] - int(intermediate[intermediate[:, 1] == i][:, 2]))**2
-    return sum
-
+        sum += (R_user[i] - intermediate[intermediate[:, 1] == i][0, 2])**2
+    return sum/len(candidate_set)
