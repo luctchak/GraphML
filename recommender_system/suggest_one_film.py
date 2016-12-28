@@ -57,7 +57,7 @@ def check_validity_of_film(G, ever_seen, index, R):
     return False
 
 
-def suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster, candidate_set):
+def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster, candidate_set,V):
     # Case : we already explored all the clusters
     if len(ever_seen) > num_cluster:
         indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
@@ -76,12 +76,18 @@ def suggest_one_film_kmeans(clusters_assigment, R_user, ever_seen, num_cluster, 
 
         return new_indexes[i]
     else:
-        # We take the best predicted film from the cluster i
+        # We take the best predicted film from the cluster len(ever_seen)
         sub_R_user = np.copy(R_user)
         for i in range(0, len(sub_R_user)):
-            if clusters_assigment[i] != len(ever_seen):
-                sub_R_user[i] = -1000  # should be enough
-        return np.argmax(sub_R_user)
+            if clusters_assignment.predict(V[i,:]) != len(ever_seen):
+                   sub_R_user[i] = -1000  # should be enough
+        argmaxs = np.argwhere(sub_R_user == np.amax(sub_R_user))
+        items_pool = [i for i in argmaxs if i in candidate_set]
+        if len(items_pool)==0:
+                print "Kmeans suggestion: empty intersection, randomly suggesting"
+                items_pool = [i for i in candidate_set if i not in ever_seen]
+                return random.choice(items_pool)
+        return items_pool[0]
 
 
 def suggest_one_film_random(R_user, ever_seen):
