@@ -50,8 +50,11 @@ def check_validity_of_film(G, ever_seen, index, R):
         return True
 
     for l in ever_seen[1:(len(ever_seen)-1)]:
-        if nx.shortest_path(G, source=index, target=l) < R/(len(ever_seen)+1):
-            print nx.shortest_path(G, source=index, target=l)
+        try:
+            if nx.shortest_path(G, source=index, target=l) < R/(len(ever_seen)+1):
+                print nx.shortest_path(G, source=index, target=l)
+                return True
+        except nx.NetworkXError:
             return True
 
     return False

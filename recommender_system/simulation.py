@@ -29,7 +29,6 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
     RMSE_dist = np.zeros(num_films_to_recommend)
     RMSE_kmeans = np.zeros(num_films_to_recommend)
 
-
     d = 10
     num_cluster = 10
     it_max = 10
@@ -69,8 +68,8 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
         als.fit(train)
         print "Done."
 
-        mem_train = als.train
-        mem_U = als.U
+        mem_train = als.train.copy()
+        mem_U = als.U.copy()
         # Compute distance matrix of films based on V
         print "Building_film_graph..."
         distances = build_film_graph(als.V)
@@ -84,8 +83,8 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
         intermediate = data[data[:, 0] == random_user_selected]
         for recommendation_method in range(0,3):
             for it in range(0, number_of_it_per_user):
-                als.train = mem_train
-                als.U = mem_U
+                als.train = mem_train.copy()
+                als.U = mem_U.copy()
                 # init values
                 ever_seen = []
                 R_user = np.zeros(num_items)
@@ -98,11 +97,11 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
                     #        print 'we explored all the possible solutions'
                     #        break
                     # uncomment bellow to use recommendation with kmeans
-                    if recommendation_method == 0:
+                    if recommendation_method == 2:
                         recommendation = suggest_one_film(G, R_user, ever_seen, candidate_set)
                     if recommendation_method == 1:
                         recommendation = suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster, candidate_set, als.V)
-                    if recommendation_method == 2:
+                    if recommendation_method == 0:
                         recommendation = suggest_one_film_random(R_user, ever_seen, candidate_set, it_max)
 
                     if recommendation == -1:
@@ -112,15 +111,15 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
                     recommendation = int(recommendation)
                     reward = intermediate[intermediate[:, 1] == recommendation][0, 2]
 
-                    if recommendation_method == 0:
+                    if recommendation_method == 2:
                         cumulated_reward_dist[i] += reward
-                        RMSE_dist[i] += RMSE(R_user, candidate_set, intermediate)
+                        RMSE_dist[i] += RMSE(R_user, ever_seen, intermediate)
                     if recommendation_method == 1:
                         cumulated_reward_kmeans[i] += reward
-                        RMSE_kmeans[i] += RMSE(R_user, candidate_set, intermediate)
-                    if recommendation_method == 2:
+                        RMSE_kmeans[i] += RMSE(R_user, ever_seen, intermediate)
+                    if recommendation_method == 0:
                         cumulated_reward_random[i] += reward
-                        RMSE_random[i] += RMSE(R_user, candidate_set, intermediate)
+                        RMSE_random[i] += RMSE(R_user, ever_seen, intermediate)
 
                     ever_seen.append(recommendation)
                     # add the value to train
@@ -133,15 +132,15 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
                     #for j in candidate_set:
 		    #   R_user[j-1] = np.dot(als.U[random_user_selected, :],als.V[j-1,:])
                     R_user = np.einsum('ij,ij->i', np.tile(als.U[random_user_selected, :], [len(als.V), 1]), als.V)
-		    if i == num_films_to_recommend-1:
-			print '\n'
-			print '='*40
-			print "recommendation_method", recommendation_method
-		    	print "it", it
-			tmp = list(ever_seen - np.ones(len(ever_seen)))
-			ever_seen_0_based = [int(e) for e in tmp]
-	            	print "R_user[ever_seen]", R_user[ever_seen_0_based]
-			print '='*40
+                if i == num_films_to_recommend-1:
+                    print '\n'
+                    print '='*40
+                    print "recommendation_method", recommendation_method
+                    print "it", it
+                    tmp = list(ever_seen - np.ones(len(ever_seen)))
+                    ever_seen_0_based = [int(e) for e in tmp]
+                    print "R_user[ever_seen]", R_user[ever_seen_0_based]
+                    print '='*40
 
     # makes it cumulative
     for i in range(1, num_films_to_recommend):
@@ -174,15 +173,19 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
     plt.legend(loc=0)
     plt.title('RMSE')
     plt.show()
-    
+
+    print "test"
     return 0
 
 
 
 def RMSE(R_user, candidate_set, intermediate):
     sum = 0
-    for i in candidate_set:
-        sum += (R_user[i-1] - intermediate[intermediate[:, 1] == i][0, 2])**2
+    if len(candidate_set)==0:
+        print "should not happen"
+        return 0
+    for s,i in enumerate(candidate_set):
+        sum += (R_user[i] - intermediate[intermediate[:, 1] == i][0, 2])**2
     return sum/len(candidate_set)
 
 
