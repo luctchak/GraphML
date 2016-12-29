@@ -1,3 +1,4 @@
-from simulation import simulation
+from simulation import *
 
-simulation(1, 1)
+random.seed(11)
+simulation(1, 5)
