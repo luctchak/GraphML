@@ -11,7 +11,6 @@ import math
 import matplotlib.pyplot as plt
 from load_data import load_data
 from load_data import filter_data
-import random
 
 num_films_to_recommend = 50
 minimum_number_of_films_rated = 50
@@ -57,6 +56,8 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
     als = ALS(d, num_users, num_items, 'row', 'col', 'val', num_iters=20, verbose=True)
 
     for random_user_selected in random_users_selected:
+        #TODO : delete the following line
+        random_user_selected = 69
         # Extract the list of films id for which we know the random user's ratings
         candidate_set = data[:, 1][data[:, 0] == random_user_selected]
         print "candidate_set", candidate_set
@@ -116,8 +117,8 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
                     recommendation = int(recommendation)
                     reward = intermediate[intermediate[:, 1] == recommendation][0, 2]
                     verbose = False
-                    if i == 1:
-                        verbose = True
+                    #if i == 1:
+                        # verbose = True
                     if recommendation_method == 2:
                         cumulated_reward_dist[i] += reward
                         RMSE_dist[i] += RMSE(R_user, candidate_set, intermediate, verbose)
@@ -136,14 +137,15 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
 
                     R_u = als.train[random_user_selected, indices]
 
-                    #TODO : COMPRENDRE CETTE PARTIE
-                    Hix = als.V[indices,:].T.dot(als.V[indices,:])
+
+
+                    Hix = als.V[indices,:]
                     HH = Hix.T.dot(Hix)
-                    M = HH + np.diag(als.lbda*len(R_u.toarray().T)*np.ones(als.d))
+                    #M = HH + np.diag(als.lbda*len(R_u.toarray().T)*np.ones(als.d))
+                    M = HH + np.diag(1000*len(R_u.toarray().T)*np.ones(als.d))
                     copy = als.U[random_user_selected, :].copy()
                     als.U[random_user_selected, :] = np.linalg.solve(M,Hix.T.dot(R_u.toarray().T)).reshape(als.d)
-                    print "U delta after centering", copy/copy.mean() - als.U[random_user_selected, :]/ als.U[random_user_selected, :].mean()
-
+                    print "delta U normalized", copy*als.U[random_user_selected, :].mean()/copy.mean() - als.U[random_user_selected, :]
                     #als.U[random_user_selected, :] = als.update(indices, als.V, R_u.toarray().T)
                     for i in candidate_set:
                         R_user[i] = np.dot(als.U[random_user_selected, :], als.V[i, :].T)

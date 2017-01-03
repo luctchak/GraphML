@@ -102,9 +102,10 @@ def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, candidate_se
 
 def suggest_one_film_random(R_user, ever_seen, candidate_set, it_max):
     if it_max > len(ever_seen):
-        random_suggestion = candidate_set[random.randint(0, len(list(set(candidate_set)))-1)]
+        random_suggestion = random.choice(list(set(candidate_set)))
         while random_suggestion in ever_seen:
-            random_suggestion = candidate_set[random.randint(0, len(list(set(candidate_set)))-1)]
+            random_suggestion = random.choice(list(set(candidate_set)))
+        print random_suggestion
         return random_suggestion
     else:
         indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
