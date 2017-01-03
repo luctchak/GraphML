@@ -51,7 +51,7 @@ class ALS(object):
     """
 
     def __init__(self,d,num_users,num_items,userCol,itemCol,ratingCol,
-                 lbda=0.8,lbda2=0.8,num_iters=20,
+                 lbda=0.8,lbda2=0.8,num_iters=100,
                  parallel=False,seed=None,reg="weighted",verbose=False):
         self.d = d
         self.num_users = num_users
@@ -94,7 +94,7 @@ class ALS(object):
             beta_V = np.ones(self.num_items)
             
         self.train = sparse_matrix(train,n = self.num_users, p = self.num_items,names=self.names)
-        
+
         self.U = U0
         self.V = V0
 

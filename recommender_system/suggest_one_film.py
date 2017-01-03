@@ -1,6 +1,8 @@
 import networkx as nx
 import numpy as np
 import random
+import warnings
+warnings.filterwarnings("ignore")
 # Suggestion with the distance constraint
 
 def suggest_one_film(G, R_user, ever_seen, candidate_set):
@@ -60,8 +62,9 @@ def check_validity_of_film(G, ever_seen, index, R):
     return False
 
 
-def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster, candidate_set, V):
+def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, candidate_set):
     # Case : we already explored all the clusters
+    num_cluster = len(list(set(clusters_assignment)))
     if len(ever_seen) > num_cluster:
         indexes = sorted(range(len(R_user)), key=R_user.__getitem__)
         # Keep only the elements for which we know the ground truth
@@ -83,9 +86,8 @@ def suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster,
         # We take the best predicted film from the cluster len(ever_seen)
         sub_R_user = np.copy(R_user)
         for i in range(0, len(sub_R_user)):
-            #TODO : lever le warning engendre par cette ligne
-            if clusters_assignment.predict(V[i,:])!=len(ever_seen):
-            # if clusters_assignment.labels_[i] != len(ever_seen):
+            # if clusters_assignment.predict(V[i, :])!=len(ever_seen):
+            if clusters_assignment[i] != len(ever_seen):
                 sub_R_user[i] = -1000  # should be enough
 
         argmaxs = np.argwhere(sub_R_user == np.amax(sub_R_user))

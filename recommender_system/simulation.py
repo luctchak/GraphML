@@ -13,14 +13,15 @@ from load_data import load_data
 from load_data import filter_data
 import random
 
-num_films_to_recommend = 30
+num_films_to_recommend = 50
 minimum_number_of_films_rated = 50
 
 
 def simulation(number_of_user_to_test, number_of_it_per_user):
     data = load_data("../data/u.data")
-    data = filter_data(data)
     data = remove_duplicate(data)
+    data = filter_data(data)
+
     cumulated_reward_random = np.zeros(num_films_to_recommend)
     cumulated_reward_dist = np.zeros(num_films_to_recommend)
     cumulated_reward_kmeans = np.zeros(num_films_to_recommend)
@@ -29,8 +30,7 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
     RMSE_dist = np.zeros(num_films_to_recommend)
     RMSE_kmeans = np.zeros(num_films_to_recommend)
 
-    d = 10
-    num_cluster = 10
+    d = 20
     it_max = 10
 
     # find the number of unique users
@@ -39,6 +39,7 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
     num_items = len(list(set(data[:, 1])))
     # Select a set of random user for simulation
     random_users_selected = []
+
     nb_it = 0
     while len(random_users_selected) < number_of_user_to_test:
         random_user = pick_random_user(data, num_users, minimum_number_of_films_rated)
@@ -48,17 +49,20 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
         if nb_it > 1000:
             print 'probably not enough users. Lower the minimum_number_of_films_rated'
             break
-
+    print "number_of_films_in_DB", num_items
+    print "number_of_users_in_DB", num_users
+    print "number_of_ratings    ", len(data[:, 0])
     print "random_users_selected", random_users_selected
     # initialisation of als
     als = ALS(d, num_users, num_items, 'row', 'col', 'val', num_iters=20, verbose=True)
 
-    for s,random_user_selected in enumerate(random_users_selected):
+    for random_user_selected in random_users_selected:
         # Extract the list of films id for which we know the random user's ratings
         candidate_set = data[:, 1][data[:, 0] == random_user_selected]
-
+        print "candidate_set", candidate_set
         # remove the user randomly selected from the DB
-        train = {}
+
+        train = dict()
         train['row'] = data[:, 0][data[:, 0] != random_user_selected]
         train['col'] = data[:, 1][data[:, 0] != random_user_selected]
         train['val'] = data[:, 2][data[:, 0] != random_user_selected]
@@ -70,27 +74,28 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
 
         mem_train = als.train.copy()
         mem_U = als.U.copy()
+
         # Compute distance matrix of films based on V
         print "Building_film_graph..."
         distances = build_film_graph(als.V)
         print "Done."
 
+
         # Generate a graph from this distance matrix (G is fixed until the end)
         G = nx.from_numpy_matrix(distances)
 
         # Apply kmeans to get cluster assigment of films
-        clusters_assignment = build_film_clusters(als.V, num_cluster)
+        clusters_assignment = build_film_clusters(als.V)
         intermediate = data[data[:, 0] == random_user_selected]
-        for recommendation_method in range(0,3):
+
+
+        for recommendation_method in range(0, 3):
             for it in range(0, number_of_it_per_user):
                 als.train = mem_train.copy()
                 als.U = mem_U.copy()
                 # init values
                 ever_seen = []
                 R_user = np.zeros(num_items)
-
-
-
                 for i in range(0, num_films_to_recommend):
                     #    recommendation = suggest_one_film(G, R_user, ever_seen, candidate_set)
                     #    if recommendation == -1:
@@ -100,7 +105,7 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
                     if recommendation_method == 2:
                         recommendation = suggest_one_film(G, R_user, ever_seen, candidate_set)
                     if recommendation_method == 1:
-                        recommendation = suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, num_cluster, candidate_set, als.V)
+                        recommendation = suggest_one_film_kmeans(clusters_assignment, R_user, ever_seen, candidate_set)
                     if recommendation_method == 0:
                         recommendation = suggest_one_film_random(R_user, ever_seen, candidate_set, it_max)
 
@@ -110,16 +115,18 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
 
                     recommendation = int(recommendation)
                     reward = intermediate[intermediate[:, 1] == recommendation][0, 2]
-
+                    verbose = False
+                    if i == 1:
+                        verbose = True
                     if recommendation_method == 2:
                         cumulated_reward_dist[i] += reward
-                        RMSE_dist[i] += RMSE(R_user, ever_seen, intermediate)
+                        RMSE_dist[i] += RMSE(R_user, candidate_set, intermediate, verbose)
                     if recommendation_method == 1:
                         cumulated_reward_kmeans[i] += reward
-                        RMSE_kmeans[i] += RMSE(R_user, ever_seen, intermediate)
+                        RMSE_kmeans[i] += RMSE(R_user, candidate_set, intermediate, verbose)
                     if recommendation_method == 0:
                         cumulated_reward_random[i] += reward
-                        RMSE_random[i] += RMSE(R_user, ever_seen, intermediate)
+                        RMSE_random[i] += RMSE(R_user, candidate_set, intermediate, verbose)
 
                     ever_seen.append(recommendation)
                     # add the value to train
@@ -128,18 +135,15 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
                     indices = als.train[random_user_selected].nonzero()[1]
                     R_u = als.train[random_user_selected, indices]
                     als.U[random_user_selected, :] = als.update(indices, als.V, R_u.toarray().T)
-		    #R_user[i] = np.dot(als.U[random_user_selected, :],als.V[i,:]) for all i \in {0,...,num_items-1}
-                    #for j in candidate_set:
-		    #   R_user[j-1] = np.dot(als.U[random_user_selected, :],als.V[j-1,:])
-                    R_user = np.einsum('ij,ij->i', np.tile(als.U[random_user_selected, :], [len(als.V), 1]), als.V)
-                if i == num_films_to_recommend-1:
+                    for i in candidate_set:
+                        R_user[i] = np.dot(als.U[random_user_selected, :], als.V[i, :].T)
+
+                if verbose:
                     print '\n'
                     print '='*40
                     print "recommendation_method", recommendation_method
                     print "it", it
-                    tmp = list(ever_seen - np.ones(len(ever_seen)))
-                    ever_seen_0_based = [int(e) for e in tmp]
-                    print "R_user[ever_seen]", R_user[ever_seen_0_based]
+                    print "R_user[ever_seen]", R_user[ever_seen]
                     print '='*40
 
     # makes it cumulative
@@ -160,31 +164,33 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
     print "RMSE_kmeans", RMSE_kmeans
     print "RMSE_random", RMSE_random
 
-    plt.ion()
-    plt.plot(range(0, 30), cumulated_reward_random, 'r', label='random')  # plotting t,a separately
-    plt.plot(range(0, 30), cumulated_reward_dist, 'b', label='dist')    # plotting t,b separately
-    plt.plot(range(0, 30), cumulated_reward_kmeans, 'g', label='k-means')  # plotting t,c separately
+    #plt.ion()
+    plt.plot(range(0, num_films_to_recommend), cumulated_reward_random, 'r', label='random')  # plotting t,a separately
+    plt.plot(range(0, num_films_to_recommend), cumulated_reward_dist, 'b', label='dist')    # plotting t,b separately
+    plt.plot(range(0, num_films_to_recommend), cumulated_reward_kmeans, 'g', label='k-means')  # plotting t,c separately
     plt.legend(loc=0)
     plt.title('cumulative reward')
     plt.figure()
-    plt.plot(range(0, 30), RMSE_random, 'r', label='random')  # plotting t,a separately
-    plt.plot(range(0, 30), RMSE_dist, 'b', label='dist')    # plotting t,b separately
-    plt.plot(range(0, 30), RMSE_kmeans, 'g', label='k-means')  # plotting t,c separately
+    plt.plot(range(0, num_films_to_recommend), RMSE_random, 'r', label='random')  # plotting t,a separately
+    plt.plot(range(0, num_films_to_recommend), RMSE_dist, 'b', label='dist')    # plotting t,b separately
+    plt.plot(range(0, num_films_to_recommend), RMSE_kmeans, 'g', label='k-means')  # plotting t,c separately
     plt.legend(loc=0)
     plt.title('RMSE')
     plt.show()
 
-    print "test"
     return 0
 
 
 
-def RMSE(R_user, candidate_set, intermediate):
+def RMSE(R_user, candidate_set, intermediate, verbose = False):
     sum = 0
-    if len(candidate_set)==0:
+    if len(candidate_set) == 0:
         print "should not happen"
         return 0
-    for s,i in enumerate(candidate_set):
+    for i in candidate_set:
+        if verbose:
+            print "R_user[",i,"]", R_user[i]
+            print "ground_truth", intermediate[intermediate[:, 1] == i][0, 2]
         sum += (R_user[i] - intermediate[intermediate[:, 1] == i][0, 2])**2
     return sum/len(candidate_set)
 

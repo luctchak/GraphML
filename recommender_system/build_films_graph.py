@@ -31,5 +31,17 @@ def distance(v_i, v_j, distance_type, beta):
 
 
 # build a vector that assign each film to a cluster using kmeans
-def build_film_clusters(V, num_classes):
-    return KMeans(n_clusters=num_classes, random_state=0).fit(V)
+def build_film_clusters(V):
+    is_not_after_gap = True
+    inertias = np.zeros(10)
+    gaps = np.zeros(9)
+    # Naive method to estimate the number of cluster : taking the maximum gap
+    for i in range(1, 10):
+        inertias[i-1] = KMeans(n_clusters=i, random_state=0).fit(V).inertia_
+
+    for i in range(0, 9):
+        gaps[i] = inertias[i+1]-inertias[i]
+
+    num_cluster = argmax(gaps) + 2
+    print "num_cluster", num_cluster
+    return KMeans(n_clusters=num_cluster, random_state=0).fit(V).labels_
