@@ -133,8 +133,18 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
                     als.train[random_user_selected, recommendation] = reward
                     # get the indices
                     indices = als.train[random_user_selected].nonzero()[1]
+
                     R_u = als.train[random_user_selected, indices]
-                    als.U[random_user_selected, :] = als.update(indices, als.V, R_u.toarray().T)
+
+                    #TODO : COMPRENDRE CETTE PARTIE
+                    Hix = als.V[indices,:].T.dot(als.V[indices,:])
+                    HH = Hix.T.dot(Hix)
+                    M = HH + np.diag(als.lbda*len(R_u.toarray().T)*np.ones(als.d))
+                    copy = als.U[random_user_selected, :].copy()
+                    als.U[random_user_selected, :] = np.linalg.solve(M,Hix.T.dot(R_u.toarray().T)).reshape(als.d)
+                    print "U delta after centering", copy/copy.mean() - als.U[random_user_selected, :]/ als.U[random_user_selected, :].mean()
+
+                    #als.U[random_user_selected, :] = als.update(indices, als.V, R_u.toarray().T)
                     for i in candidate_set:
                         R_user[i] = np.dot(als.U[random_user_selected, :], als.V[i, :].T)
 
@@ -182,8 +192,17 @@ def simulation(number_of_user_to_test, number_of_it_per_user):
 
 
 
-def RMSE(R_user, candidate_set, intermediate, verbose = False):
+def RMSE(R_user_to_copy, candidate_set, intermediate, verbose = False, center = True):
     sum = 0
+    R_user = R_user_to_copy.copy()
+    mean1 = R_user[candidate_set].mean()
+    if center and mean1!=0:
+        mean2 = 0
+        for i in candidate_set:
+            mean2 += intermediate[intermediate[:, 1] == i][0, 2]
+        mean2/=len(candidate_set)
+        R_user *= mean2/mean1
+
     if len(candidate_set) == 0:
         print "should not happen"
         return 0
