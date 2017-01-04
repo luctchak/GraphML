@@ -10,9 +10,14 @@ from sklearn.cluster import KMeans
 def build_film_graph(V):
     num_film = len(V[:, 0])
     distances = np.zeros((num_film, num_film), dtype=float)
+    mean = 0
     for i in range(0, num_film):
         for j in range(0, num_film):
-            distances[i, j] = distance(V[i, :], V[j, :], "L2", 1)
+            mean += distance(V[i, :], V[j, :], "L2", 100000000)
+    mean /= num_film**2
+    for i in range(0, num_film):
+        for j in range(0, num_film):
+            distances[i, j] += distance(V[i, :], V[j, :], "L2", mean)
 
     return distances
 

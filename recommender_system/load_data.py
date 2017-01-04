@@ -41,10 +41,12 @@ def filter_data(all_data):
     return data_filtered
 
 
-
+# Remove duplicated lines after having removing the 4th col corresponding to the time
 def remove_duplicate(all_data):
     all_data = all_data[:, 0:3]
     return unique_rows(all_data)
+
+
 
 def unique_rows(a):
     a = np.ascontiguousarray(a)

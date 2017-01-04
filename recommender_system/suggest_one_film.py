@@ -105,7 +105,6 @@ def suggest_one_film_random(R_user, ever_seen, candidate_set, it_max):
         random_suggestion = random.choice(list(set(candidate_set)))
         while random_suggestion in ever_seen:
             random_suggestion = random.choice(list(set(candidate_set)))
-        print random_suggestion
         return random_suggestion
     else:
         indexes = sorted(range(len(R_user)), key=R_user.__getitem__)

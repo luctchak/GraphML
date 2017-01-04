@@ -42,8 +42,8 @@ class ALS(object):
     seed : int
         if not None, fix the random seed
     reg: string
-        what sould be the regularisation ? 
-        - if "weighted" the regularisation 
+        what sould be the regularisation ?
+        - if "weighted" the regularisation
         is weighted by the number of non empty value in each row and column
         - if None or "default" it will be classic l2 norm
     verbose : bool
@@ -51,7 +51,7 @@ class ALS(object):
     """
 
     def __init__(self,d,num_users,num_items,userCol,itemCol,ratingCol,
-                 lbda=0.8,lbda2=0.8,num_iters=100,
+                 lbda=0.8,lbda2=0.8,num_iters=20,
                  parallel=False,seed=None,reg="weighted",verbose=False):
         self.d = d
         self.num_users = num_users
@@ -69,17 +69,17 @@ class ALS(object):
         if self.reg is None:
             self.reg = "default"
         self.verbose = verbose
-   
+
     def init_factors(self,num_factors,assign_values=True):
         if assign_values:
             return self.d**-0.5*np.random.random_sample((num_factors,self.d))
         return np.empty((num_factors,self.d))
-            
+
     def fit(self,train,U0=None,V0=None,beta_V=None):
         """
         Learn factors from training set. User and item factors are
         fitted alternately.
-        
+
         Parameters
         ==========
         train : dict
@@ -89,10 +89,10 @@ class ALS(object):
         """
         if self.seed is not None:
             np.random.seed(self.seed)
-        
+
         if beta_V is None:
             beta_V = np.ones(self.num_items)
-            
+
         self.train = sparse_matrix(train,n = self.num_users, p = self.num_items,names=self.names)
 
         self.U = U0
@@ -105,12 +105,12 @@ class ALS(object):
             #self.V = self.init_factors(self.num_items)
             self.V = np.random.normal(size=(self.num_items,self.d))
         for it in np.arange(self.num_iters):
-            
+
             if self.parallel:
                 pool = Pool()
                 res = [pool.apply_async(self.parallel_update, (u,self.train,True)) for u in range(self.num_users)]
                 self.U = np.array([r.get() for r in res])
-                
+
                 pool = Pool()
                 res = [pool.apply_async(self.parallel_update, (i,self.train,False)) for i in range(self.num_items)]
                 self.V = np.array([r.get() for r in res])
@@ -130,28 +130,28 @@ class ALS(object):
                         self.V[i,:] = self.update(indices,self.U,R_i.toarray().T[0])
                     else:
                         self.V[i,:] = np.zeros(self.d)
-                        
+
             if self.verbose:
                 print('end iteration',it+1)
-    
+
     def linear_transfo(self,R,intercept=True):
         if intercept:
             return 1+self.alpha*R
         else:
             return self.alpha*R
-    
+
     def log_transfo(self,R,intercept=True):
         if intercept:
             return 1+self.alpha*np.log(1+R/self.eps)
         else:
             return self.alpha*np.log(1+R/self.eps)
 
-    def fitImplicit(self,train,alpha=10.,c="linear",eps=1E-8,U0=None,V0=None):  
+    def fitImplicit(self,train,alpha=10.,c="linear",eps=1E-8,U0=None,V0=None):
         """
-        Learn factors from training set with the implicit formula of Koren 
+        Learn factors from training set with the implicit formula of Koren
         "Collaborative Filtering for Implicit Feedback Datasets"
         User and item factors are fitted alternately.
-        
+
         Parameters
         ==========
         train : dict
@@ -168,20 +168,21 @@ class ALS(object):
         """
         if self.seed is not None:
             np.random.seed(self.seed)
-        
+
         # we define a global fonction transfo that is either linear_transfo
-        # or log_transfo. This prevent to make the if else check for each 
+        # or log_transfo. This prevent to make the if else check for each
         # user and for each item at each iteration !
         if c=="linear":
             self.transfo = self.linear_transfo
         elif c=="log":
             self.transfo = self.log_transfo
-        
+
         self.alpha = alpha
         self.c = c
         self.eps = eps
+
         self.train = sparse_matrix(train,n = self.num_users, p = self.num_items,names=self.names)
-        
+
         self.U = U0
         self.V = V0
 
@@ -192,13 +193,13 @@ class ALS(object):
             #self.V = self.init_factors(self.num_items)
             self.V = np.random.normal(size=(self.num_items,self.d))
         for it in np.arange(self.num_iters):
-            
+
             if self.parallel:
                 VV = self.V.T.dot(self.V)
                 pool = Pool()
                 res = [pool.apply_async(self.parallel_implicit_update, (u,VV,self.train,True)) for u in range(self.num_users)]
                 self.U = np.array([r.get() for r in res])
-                
+
                 UU = self.U.T.dot(self.U)
                 pool = Pool()
                 res = [pool.apply_async(self.parallel_implicit_update, (i,UU,self.train,False)) for i in range(self.num_items)]
@@ -213,7 +214,7 @@ class ALS(object):
                         self.U[u,:] = self.implicit_update(indices,self.V,VV,R_u.toarray()[0])
                     else:
                         self.U[u,:] = np.zeros(self.d)
-    
+
                 UU = self.U.T.dot(self.U)
                 for i in range(self.num_items):
                     indices = self.train[:,i].nonzero()[0]
@@ -222,26 +223,34 @@ class ALS(object):
                         self.V[i,:] = self.implicit_update(indices,self.U,UU,R_i.toarray().T[0])
                     else:
                         self.V[i,:] = np.zeros(self.d)
-            
+
             if self.verbose:
                 print('end iteration',it+1)
-        
 
-    def implicit_update(self,indices,H,HH,R):
+    def parallel_update(self,ind,train,user=True):
         """
-        Implicit update latent factors for a single user or item.
+        Update latent factors for a single user or item applied in parallel
         """
-        # manque R entre Hix.T.dot(Hix)
-        Hix = csr_matrix(H[indices,:])
-        C = diags(self.transfo(R,intercept=False),shape=(len(R),len(R)))
-        if self.reg=="weighted":
-            M = HH + Hix.T.dot(C).dot(Hix) + np.diag(self.lbda*len(R)*np.ones(self.d))
-        elif self.reg=="default":
-            M = HH + Hix.T.dot(C).dot(Hix) + np.diag(self.lbda*np.ones(self.d))
-        C = diags(self.transfo(R),shape=(len(R),len(R)))
-        return np.linalg.solve(M,(C.dot(Hix)).sum(axis=0).T).reshape(self.d)
+        if user:
+            indices = train[ind].nonzero()[1]
+            Hix = self.V[indices,:]
+            R_u = train[ind,indices]
+            R = R_u.toarray().T
+        else:
+            indices = train[:,ind].nonzero()[0]
+            Hix = self.U[indices,:]
+            R_i = train[indices,ind]
+            R = R_i.toarray().T[0]
+        if len(indices)>0:
+            HH = Hix.T.dot(Hix)
+            if self.reg=="weighted":
+                M = HH + np.diag(self.lbda*len(R)*np.ones(self.d))
+            elif self.reg=="default":
+                M = HH + np.diag(self.lbda*np.ones(self.d))
+            return np.linalg.solve(M,Hix.T.dot(R)).reshape(self.d)
+        else:
+            return np.zeros(self.d)
 
-        
     def update(self,indices,H,R):
         """
         Update latent factors for a single user or item.
@@ -253,7 +262,6 @@ class ALS(object):
         elif self.reg=="default":
             M = HH + np.diag(self.lbda*np.ones(self.d))
         return np.linalg.solve(M,Hix.T.dot(R)).reshape(self.d)
-
 
     def parallel_implicit_update(self,ind,HH,train,user=True):
         """
@@ -280,29 +288,17 @@ class ALS(object):
         else:
             return np.zeros(self.d)
 
-    def parallel_update(self,ind,train,user=True):
+    def implicit_update(self,indices,H,HH,R):
         """
-        Update latent factors for a single user or item applied in parallel
+        Implicit update latent factors for a single user or item.
         """
-        if user:
-            indices = train[ind].nonzero()[1]
-            Hix = self.V[indices,:]
-            R_u = train[ind,indices]
-            R = R_u.toarray().T
-        else:
-            indices = train[:,ind].nonzero()[0]
-            Hix = self.U[indices,:]
-            R_i = train[indices,ind]
-            R = R_i.toarray().T[0]
-        if len(indices)>0:
-            HH = Hix.T.dot(Hix)
-            if self.reg=="weighted":
-                M = HH + np.diag(self.lbda*len(R)*np.ones(self.d))
-            elif self.reg=="default":
-                M = HH + np.diag(self.lbda*np.ones(self.d))
-            return np.linalg.solve(M,Hix.T.dot(R)).reshape(self.d)
-        else:
-            return np.zeros(self.d)
-
-
+        # manque R entre Hix.T.dot(Hix)
+        Hix = csr_matrix(H[indices,:])
+        C = diags(self.transfo(R,intercept=False),shape=(len(R),len(R)))
+        if self.reg=="weighted":
+            M = HH + Hix.T.dot(C).dot(Hix) + np.diag(self.lbda*len(R)*np.ones(self.d))
+        elif self.reg=="default":
+            M = HH + Hix.T.dot(C).dot(Hix) + np.diag(self.lbda*np.ones(self.d))
+        C = diags(self.transfo(R),shape=(len(R),len(R)))
+        return np.linalg.solve(M,(C.dot(Hix)).sum(axis=0).T).reshape(self.d)
 
